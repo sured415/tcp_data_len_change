@@ -25,7 +25,7 @@ uint32_t new_data_len;
 unsigned char* new_data;
 
 string from_s, to_s;
-map<flow, uint16_t> flow_check;
+map<flow, uint32_t> flow_check;
 
 static u_int32_t print_pkt (struct nfq_data *tb)
 {
@@ -59,7 +59,7 @@ static u_int32_t print_pkt (struct nfq_data *tb)
 				string s_data;
 				s_data = (char *) data;
 
-				map<flow, uint16_t>::iterator iter, r_iter;
+				map<flow, uint32_t>::iterator iter, r_iter;
 				iter = flow_check.find(check);
 				if(s_data.find(from_s) != string::npos){
 					size_t pos = 0;
@@ -67,7 +67,7 @@ static u_int32_t print_pkt (struct nfq_data *tb)
 						s_data.replace(pos, from_s.length(), to_s);
 						pos += to_s.length();
 					}
-					if(iter != flow_check.end()) tcpH->th_seq += iter->second;
+					if(iter != flow_check.end()) tcpH->th_seq += htonl(iter->second);
 					flow_check[check] += s_data.length() - (ret - len);
 
 					memcpy((new_data + len), s_data.c_str(), s_data.length());
@@ -79,7 +79,7 @@ static u_int32_t print_pkt (struct nfq_data *tb)
 				check.reverse_flow();
 				r_iter = flow_check.find(check);
 				if(r_iter != flow_check.end()) {
-					tcpH->th_ack -= r_iter->second;
+					tcpH->th_ack -= htonl(r_iter->second);
 					calTCPChecksum(new_data, ret);
 					new_data_len = ret;
 					flag = 1;
